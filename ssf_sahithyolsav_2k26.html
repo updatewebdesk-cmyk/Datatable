@@ -1,0 +1,107 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Malayalam:wght@400;500;700;900&display=swap');
+  .mlapp { font-family: 'Noto Sans Malayalam', var(--font-sans), sans-serif; padding: 0; }
+  .hero { background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 50%, #0d2035 100%); border-radius: var(--border-radius-lg); padding: 2.5rem 2rem 2rem; text-align: center; position: relative; overflow: hidden; margin-bottom: 1.5rem; border: 0.5px solid rgba(55,138,221,0.3); }
+  .hero::before { content: ''; position: absolute; top: -60px; right: -60px; width: 200px; height: 200px; border-radius: 50%; background: rgba(55,138,221,0.08); }
+  .hero::after { content: ''; position: absolute; bottom: -40px; left: -40px; width: 150px; height: 150px; border-radius: 50%; background: rgba(29,158,117,0.07); }
+  .badge-top { display: inline-block; background: rgba(55,138,221,0.15); border: 0.5px solid rgba(55,138,221,0.4); color: #85B7EB; font-size: 11px; letter-spacing: 2px; padding: 4px 14px; border-radius: 20px; margin-bottom: 1rem; text-transform: uppercase; }
+  .theme-text { font-size: 1.5rem; font-weight: 900; color: #FAC775; line-height: 1.4; margin-bottom: 0.5rem; }
+  .title-main { font-size: 2.4rem; font-weight: 900; color: #fff; line-height: 1.2; margin-bottom: 1rem; }
+  .meta-row { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .meta-pill { background: rgba(255,255,255,0.07); border: 0.5px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 6px 16px; font-size: 13px; color: #B5D4F4; display: flex; align-items: center; gap: 6px; }
+  .meta-pill i { font-size: 14px; }
+  .venue-pill { background: rgba(29,158,117,0.12); border: 0.5px solid rgba(29,158,117,0.3); border-radius: 20px; padding: 6px 18px; font-size: 14px; color: #9FE1CB; display: inline-flex; align-items: center; gap: 6px; margin-top: 0.5rem; }
+  .day-tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
+  .day-tab { flex: 1; padding: 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); font-size: 13px; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; text-align: center; transition: all 0.2s; font-family: 'Noto Sans Malayalam', var(--font-sans), sans-serif; }
+  .day-tab.active { background: #0a1628; border-color: #378ADD; color: #B5D4F4; }
+  .day-tab:hover:not(.active) { border-color: var(--color-border-secondary); color: var(--color-text-primary); }
+  .stage-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 1rem; letter-spacing: 0.5px; text-transform: uppercase; }
+  .stage-label::before, .stage-label::after { content: ''; flex: 1; height: 0.5px; background: var(--color-border-tertiary); }
+  .schedule-list { display: flex; flex-direction: column; gap: 10px; }
+  .event-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 14px; transition: border-color 0.2s; cursor: default; }
+  .event-card:hover { border-color: var(--color-border-secondary); }
+  .time-block { min-width: 100px; }
+  .time-from { font-size: 13px; font-weight: 500; color: #378ADD; }
+  .time-to { font-size: 11px; color: var(--color-text-tertiary); }
+  .event-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .event-name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); font-family: 'Noto Sans Malayalam', var(--font-sans), sans-serif; }
+  .event-cat { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .dot-lp { background: #378ADD; }
+  .dot-up { background: #1D9E75; }
+  .dot-hss { background: #D4537E; }
+  .dot-jun { background: #EF9F27; }
+  .dot-senior { background: #E24B4A; }
+  .footer-card { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 1rem 1.25rem; text-align: center; margin-top: 1.5rem; }
+  .footer-org { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .footer-sub { font-size: 12px; color: var(--color-text-tertiary); margin-top: 2px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 1.25rem; }
+  .leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--color-text-secondary); }
+  .leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .day2-notice { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 2rem; text-align: center; color: var(--color-text-secondary); font-size: 14px; }
+  .day2-notice i { font-size: 24px; display: block; margin-bottom: 8px; color: var(--color-text-tertiary); }
+</style>
+
+<div class="mlapp">
+  <h2 class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">SSF സാഹിത്യോത്സവ് 2K26 — May 23-24, Vadakumpuram Sector event schedule</h2>
+
+  <div class="hero">
+    <div class="badge-top">SSF Vadakumpuram Sector</div>
+    <div class="theme-text">"മണ്ണിലാഴ്ന്ന സാഹിത്യം"</div>
+    <div class="title-main">സാഹിത്യോത്സവ് 2K26</div>
+    <div class="meta-row">
+      <span class="meta-pill"><i class="ti ti-calendar" aria-hidden="true"></i> May 23 – 24</span>
+      <span class="meta-pill"><i class="ti ti-calendar-week" aria-hidden="true"></i> ശനി, ഞായർ</span>
+    </div>
+    <div class="venue-pill"><i class="ti ti-map-pin" aria-hidden="true"></i> ചേനാടൻ കുളമ്പ്</div>
+  </div>
+
+  <div class="day-tabs">
+    <button class="day-tab active" onclick="switchDay(0,this)" aria-label="Day 1">23 മേയ് · ശനി</button>
+    <button class="day-tab" onclick="switchDay(1,this)" aria-label="Day 2">24 മേയ് · ഞായർ</button>
+  </div>
+
+  <div id="day1">
+    <div class="stage-label">വേദി 1</div>
+    <div class="legend">
+      <span class="leg-item"><span class="leg-dot dot-lp"></span> LP</span>
+      <span class="leg-item"><span class="leg-dot dot-up"></span> LP & UP</span>
+      <span class="leg-item"><span class="leg-dot dot-hss"></span> HSS</span>
+      <span class="leg-item"><span class="leg-dot dot-jun"></span> Junior</span>
+      <span class="leg-item"><span class="leg-dot dot-senior"></span> Senior</span>
+    </div>
+    <div class="schedule-list">
+      <div class="event-card"><div class="time-block"><div class="time-from">2:00 pm</div><div class="time-to">→ 2:30 pm</div></div><span class="event-dot dot-lp"></span><div><div class="event-name">വായന മലയാളം</div><div class="event-cat">LP</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">2:30 pm</div><div class="time-to">→ 3:00 pm</div></div><span class="event-dot dot-up"></span><div><div class="event-name">Quiz</div><div class="event-cat">LP & UP</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">3:00 pm</div><div class="time-to">→ 4:00 pm</div></div><span class="event-dot dot-lp"></span><div><div class="event-name">Pencil Drawing</div><div class="event-cat">LP</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">4:00 pm</div><div class="time-to">→ 4:15 pm</div></div><span class="event-dot dot-lp"></span><div><div class="event-name">Reading അറബിമലയാളം</div><div class="event-cat">LP</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">4:15 pm</div><div class="time-to">→ 5:15 pm</div></div><span class="event-dot dot-lp"></span><div><div class="event-name">Water Colouring</div><div class="event-cat">LP</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">5:15 pm</div><div class="time-to">→ 6:15 pm</div></div><span class="event-dot dot-hss"></span><div><div class="event-name">ചിത്ര രചന പെൻസിൽ</div><div class="event-cat">HSS</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">6:15 pm</div><div class="time-to">→ 7:15 pm</div></div><span class="event-dot dot-hss"></span><div><div class="event-name">Water Colour</div><div class="event-cat">HSS</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">7:15 pm</div><div class="time-to">→ 8:15 pm</div></div><span class="event-dot dot-jun"></span><div><div class="event-name">Calligraphy</div><div class="event-cat">Junior</div></div></div>
+      <div class="event-card"><div class="time-block"><div class="time-from">8:15 pm</div><div class="time-to">→ 9:00 pm</div></div><span class="event-dot dot-senior"></span><div><div class="event-name">കഥ രചന</div><div class="event-cat">Senior</div></div></div>
+    </div>
+  </div>
+
+  <div id="day2" style="display:none">
+    <div class="day2-notice">
+      <i class="ti ti-calendar-event" aria-hidden="true"></i>
+      May 24 schedule coming soon.<br>
+      <button style="margin-top:12px; font-size:13px;" onclick="sendPrompt('Add the schedule for May 24 to the SSF Sahithyolsav web app')">Add Day 2 schedule ↗</button>
+    </div>
+  </div>
+
+  <div class="footer-card">
+    <div class="footer-org">Sahithyolsav Samithi</div>
+    <div class="footer-sub">SSF Vadakumpuram Sector · 2K26</div>
+  </div>
+</div>
+
+<script>
+function switchDay(idx, el) {
+  document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('day1').style.display = idx === 0 ? '' : 'none';
+  document.getElementById('day2').style.display = idx === 1 ? '' : 'none';
+}
+</script>
