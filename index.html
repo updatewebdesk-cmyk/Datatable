@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Tracker Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f3ff',
+                            100: '#edd8ff',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            900: '#4c1d95',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- Header Area -->
+    <header class="border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md sticky top-0 z-40 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Branding -->
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-gradient-to-tr from-brand-600 to-indigo-500 rounded-xl text-white shadow-lg shadow-brand-500/20">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                            Universal Tracker Dashboard
+                        </h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Powered by Google Sheets & Dynamic Schema parsing</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex space-x-1" aria-label="Tabs">
+                    <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400">
+                        Overview
+                    </button>
+                    <button onclick="switchTab('analytics')" id="tab-analytics" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200">
+                        BI Custom Studio
+                    </button>
+                    <button onclick="switchTab('data')" id="tab-data" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200">
+                        Data Explorer
+                    </button>
+                    <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200">
+                        Setup Source / Troubleshoot
+                    </button>
+                </nav>
+
+                <!-- Connection Badge & Theme Toggle -->
+                <div class="flex items-center gap-3">
+                    <span id="source-badge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
+                        <span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        Connecting...
+                    </span>
+                    
+                    <!-- Theme Toggle Button -->
+                    <button id="theme-toggle" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300">
+                        <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <!-- Sun Icon -->
+                            <path class="hidden dark:block" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14.25 12a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                            <!-- Moon Icon -->
+                            <path class="block dark:hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="md:hidden border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 flex justify-around py-2">
+        <button onclick="switchTab('overview')" class="tab-btn-mobile text-xs flex flex-col items-center gap-1 text-brand-600 dark:text-brand-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zm10 0a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"/></svg>
+            Overview
+        </button>
+        <button onclick="switchTab('analytics')" class="tab-btn-mobile text-xs flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+            BI Studio
+        </button>
+        <button onclick="switchTab('data')" class="tab-btn-mobile text-xs flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+            Explorer
+        </button>
+        <button onclick="switchTab('settings')" class="tab-btn-mobile text-xs flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Setup
+        </button>
+    </div>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Error / Fallback Notification Banner -->
+        <div id="fallback-notification" class="hidden mb-6 bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-400 p-5 rounded-2xl flex flex-col gap-4">
+            <div class="flex items-start gap-4">
+                <span class="p-2.5 bg-rose-500/20 text-rose-500 rounded-xl mt-0.5 shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </span>
+                <div class="space-y-1">
+                    <span class="font-bold text-base block text-slate-900 dark:text-white">Connection Attempt Blocked by Google Security</span>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Your browser blocked the direct link to the Google Sheet. This is usually because the spreadsheet is **Restricted** (Private) to your account, preventing client-side JavaScript from fetching it.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Immediate Diagnostic Insight Box -->
+            <div class="bg-slate-100 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-2">
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Connection Diagnostics Test:</div>
+                <ul class="text-xs space-y-1.5 text-slate-500 dark:text-slate-400">
+                    <li class="flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        <strong class="text-slate-700 dark:text-slate-300">Format Check:</strong> Valid Spreadsheet ID extracted.
+                    </li>
+                    <li id="diagnostic-access-test" class="flex items-start gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0"></span>
+                        <span>
+                            <strong class="text-slate-700 dark:text-slate-300">CORS/Access Status:</strong> Failed to fetch. Google redirected the request to a Secure Login Page (<code class="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded text-rose-500 font-mono">accounts.google.com</code>). 
+                        </span>
+                    </li>
+                    <li class="flex items-start gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0"></span>
+                        <span>
+                            <strong class="text-slate-700 dark:text-slate-300">Immediate Action Required:</strong> Open your Google Sheet, click the blue <b class="text-slate-800 dark:text-white">Share</b> button on the top-right, change "Restricted" to <b class="text-emerald-500">"Anyone with the link can view"</b>, then click "Apply Connection".
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="flex flex-wrap gap-2.5 pt-1">
+                <button onclick="switchTab('settings')" class="px-4 py-2 text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition-colors shadow-lg shadow-brand-500/15">
+                    Fix Google Sheet Connection
+                </button>
+                <button onclick="loadSampleDatasetDirectly()" class="px-4 py-2 text-xs font-bold bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl transition-colors">
+                    Preview Dashboard with Mock Data
+                </button>
+            </div>
+        </div>
+
+        <!-- Connection Progress Loader -->
+        <div id="system-loading" class="flex flex-col items-center justify-center py-20">
+            <div class="relative w-20 h-20">
+                <div class="absolute inset-0 rounded-full border-4 border-slate-700"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
+            </div>
+            <p class="mt-6 text-lg font-medium text-slate-300">Connecting & Analyzing Sheet Metadata...</p>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm text-center">Reading column labels, checking data structures, and generating metrics dynamically...</p>
+        </div>
+
+        <!-- Active View Panels -->
+        <div id="content-views" class="hidden space-y-8">
+
+            <!-- TAB 1: OVERVIEW DASHBOARD -->
+            <section id="view-overview" class="space-y-8">
+                <!-- KPI Statistics Deck -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="kpi-deck">
+                    <!-- Dynamic widgets generated by JavaScript (Tasks, Completion %, Spend vs Budget, Hours etc) -->
+                </div>
+
+                <!-- Live Quick-Filter Bar -->
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-4 shadow-sm">
+                    <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="p-1.5 bg-brand-500/10 dark:bg-brand-500/20 text-brand-500 rounded-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                            </span>
+                            <span class="font-semibold text-slate-700 dark:text-slate-200 text-sm">Interactive Quick Filters</span>
+                        </div>
+                        <!-- Dynamic filters placeholder -->
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto" id="quick-filters-container">
+                            <!-- Populated with multi-select filter dropdowns dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overview Main Charts Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Primary status split chart -->
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-slate-900 dark:text-white" id="main-breakdown-title">Status Split</h3>
+                                <span class="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700/50 px-2 py-1 rounded">Doughnut Chart</span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Volume distribution across operational values.</p>
+                        </div>
+                        <div class="relative h-64 flex justify-center items-center">
+                            <canvas id="chart-primary"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Secondary categories split chart -->
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-slate-900 dark:text-white" id="secondary-breakdown-title">Category Distribution</h3>
+                                <span class="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700/50 px-2 py-1 rounded">Bar Chart</span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Item concentration categorized by structural groupings.</p>
+                        </div>
+                        <div class="relative h-64">
+                            <canvas id="chart-secondary"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Financial / Value Metrics Chart -->
+                    <div id="financial-chart-card" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm flex flex-col justify-between lg:col-span-2">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-bold text-slate-900 dark:text-white">Financial & Numerical Comparison</h3>
+                                <span class="text-xs text-slate-400 bg-slate-100 dark:bg-slate-700/50 px-2 py-1 rounded">Double Series Bar</span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Comparative view of numeric allocations vs actual expenditures.</p>
+                        </div>
+                        <div class="relative h-72">
+                            <canvas id="chart-financial"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: BI CUSTOM STUDIO -->
+            <section id="view-analytics" class="hidden space-y-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="p-2.5 bg-brand-500/10 dark:bg-brand-500/20 text-brand-500 rounded-xl">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Self-Service BI & Chart Studio</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Design custom widgets and visualize comparisons based on your spreadsheet columns.</p>
+                        </div>
+                    </div>
+
+                    <!-- BI Controls Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <!-- Grouping Field (X-axis) -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Group By (X-Axis)</label>
+                            <select id="bi-groupby" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-500">
+                                <!-- Dynamic Options -->
+                            </select>
+                        </div>
+
+                        <!-- Aggregate Field (Y-axis) -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Measure / Calculation</label>
+                            <select id="bi-measure" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-500">
+                                <!-- Dynamic Options -->
+                            </select>
+                        </div>
+
+                        <!-- Calculation Mode -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Aggregation Method</label>
+                            <select id="bi-aggmethod" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-500">
+                                <option value="count">Count of Records</option>
+                                <option value="sum">Sum of values</option>
+                                <option value="avg">Average of values</option>
+                            </select>
+                        </div>
+
+                        <!-- Visual Mode -->
+                        <div class="flex flex-col gap-1.5">
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Chart Design</label>
+                            <select id="bi-charttype" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-500">
+                                <option value="bar">Vertical Columns</option>
+                                <option value="horizontalBar">Horizontal Bars</option>
+                                <option value="line">Trend Line</option>
+                                <option value="doughnut">Doughnut Split</option>
+                                <option value="polarArea">Polar Segment</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Live Aggregation Chart Rendering Panel -->
+                    <div class="bg-slate-50 dark:bg-slate-900/50 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-6 relative flex flex-col items-center justify-center">
+                        <div class="absolute top-4 left-4 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded text-xs text-indigo-500 dark:text-indigo-400 font-semibold tracking-wider uppercase">Live Preview</div>
+                        <div class="w-full h-96 relative">
+                            <canvas id="chart-bi-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: DATA EXPLORER & RAW GRID -->
+            <section id="view-data" class="hidden space-y-6">
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Spreadsheet Data Explorer</h2>
+                            <p class="text-sm text-slate-500 dark:text-slate-400">Direct tabular output representing the parsed tracker fields with multi-column filters.</p>
+                        </div>
+
+                        <!-- Operations Buttons -->
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="exportToCSV()" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold bg-brand-500 hover:bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/20 transition-all">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Export as CSV File
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Secondary Filter Interface -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div class="relative md:col-span-2">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                            </span>
+                            <input type="text" id="grid-search" placeholder="Type to search all fields..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        </div>
+
+                        <!-- Rows Page Selector -->
+                        <div class="flex items-center justify-end gap-2 text-sm text-slate-500">
+                            <span>Display Rows:</span>
+                            <select id="grid-page-size" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-slate-700 dark:text-slate-300">
+                                <option value="10">10 Rows</option>
+                                <option value="25" selected>25 Rows</option>
+                                <option value="50">50 Rows</option>
+                                <option value="100">100 Rows</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Responsive Data Table View wrapper -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700/60 max-h-[600px] overflow-y-auto">
+                        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700/60 text-left text-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-900 sticky top-0 z-10" id="table-head">
+                                <!-- Dynamic Headers -->
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 dark:divide-slate-700/60 bg-white dark:bg-slate-800" id="table-body">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Table Footer Pagination Bar -->
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 text-sm text-slate-500">
+                        <span id="grid-info">Showing row 0 to 0 of 0 entries</span>
+                        <div class="flex gap-1.5" id="grid-pagination">
+                            <!-- Dynamic pagination Buttons -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 4: SETUP SOURCE CONNECTION -->
+            <section id="view-settings" class="hidden space-y-6">
+                <!-- Troubleshooting alert highlighted inside Setup tab -->
+                <div class="bg-indigo-500/10 border border-indigo-500/30 p-5 rounded-2xl flex items-start gap-4 mb-6 text-indigo-200">
+                    <span class="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl shrink-0">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </span>
+                    <div class="space-y-1">
+                        <span class="font-bold text-white block">Connection Diagnostics Tool</span>
+                        <p class="text-sm text-slate-300">
+                            Because client-side dashboards run entirely inside your browser (without intermediate data storage servers), Google prohibits file parsing unless the sheet access mode is explicitly set to <strong class="text-white">"Anyone with the link can view"</strong>.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Left Column: Source URL Configurator -->
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm lg:col-span-2 space-y-6">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2.5 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-500 rounded-xl">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-900 dark:text-white">Active Connection Config</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Synchronize this application with live public trackers or import files directly.</p>
+                            </div>
+                        </div>
+
+                        <!-- Form Field URL Input -->
+                        <div class="space-y-4">
+                            <div class="flex flex-col gap-1.5">
+                                <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">Google Spreadsheet URL</label>
+                                <input type="text" id="config-sheet-url" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-200 font-mono" placeholder="https://docs.google.com/spreadsheets/d/...">
+                                <span class="text-xs text-slate-400">Supports direct sheet sharing links. Ensure it contains the standard Spreadsheet ID.</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="flex flex-col gap-1.5">
+                                    <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">GID (Worksheet Tab ID)</label>
+                                    <input type="text" id="config-gid" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-200" placeholder="e.g. 1243295356">
+                                    <span class="text-xs text-slate-400">Specifies the targeted sheet tab inside the workbook. (Defaults to 0)</span>
+                                </div>
+                                <div class="flex items-end">
+                                    <button onclick="applyGoogleSheetSource()" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors shadow-lg shadow-brand-500/10 flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18.5"></path>
+                                        </svg>
+                                        Apply Connection
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Drag and Drop / Drag area -->
+                        <div class="border-t border-slate-200 dark:border-slate-700/60 pt-6">
+                            <h3 class="font-bold text-slate-900 dark:text-white text-base mb-1">Alternative: Upload a CSV Report</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">If you cannot share your sheet publicly, export it as a CSV locally and upload it here. It is parsed completely offline inside your browser.</p>
+                            <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-brand-500/50 dark:hover:border-brand-500/50 transition-colors rounded-2xl p-6 flex flex-col items-center text-center cursor-pointer relative" id="drag-drop-zone">
+                                <input type="file" id="csv-file-input" accept=".csv" class="absolute inset-0 opacity-0 cursor-pointer">
+                                <svg class="w-10 h-10 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                <span class="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-0.5 font-sans">Choose CSV File</span>
+                                <span class="text-xs text-slate-400 font-sans">or drag and drop your exported document here (Runs entirely offline)</span>
+                            </div>
+                        </div>
+
+                        <!-- Direct CSV Text Paste -->
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-700 dark:text-slate-200">Paste raw CSV / TSV copied values</label>
+                            <textarea id="csv-text-paste" rows="3" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-brand-500" placeholder="Task ID,Task Name,Status,Hours,Cost&#10;T-01,Setup,Completed,20,1500&#10;T-02,Testing,In Progress,12,800"></textarea>
+                            <button onclick="applyCSVTextSource()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-semibold rounded-xl text-xs transition-colors">Import Raw Text</button>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Quick Instructions -->
+                    <div class="bg-gradient-to-br from-indigo-900/40 to-slate-800/80 border border-indigo-500/10 dark:border-slate-700/50 rounded-2xl p-6 text-white space-y-6">
+                        <h3 class="font-bold text-lg text-brand-300">Google Sheet Connection Guide</h3>
+                        <p class="text-sm text-slate-300 leading-relaxed">To view a sheet natively here, complete these 3 rapid steps:</p>
+                        
+                        <div class="space-y-4 text-sm">
+                            <div class="flex gap-3">
+                                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-500 text-xs font-bold shrink-0">1</span>
+                                <p class="text-slate-300">Open your Google Sheet and click the big blue <b class="text-white">Share</b> button on the top-right.</p>
+                            </div>
+                            <div class="flex gap-3">
+                                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-500 text-xs font-bold shrink-0">2</span>
+                                <p class="text-slate-300">Under <b class="text-white font-sans">General access</b>, change "Restricted" to <b class="text-white">"Anyone with the link"</b> and ensure the role is set to <b class="text-white">Viewer</b>.</p>
+                            </div>
+                            <div class="flex gap-3">
+                                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-brand-500 text-xs font-bold shrink-0">3</span>
+                                <p class="text-slate-300">Copy the sheet's URL from your browser's address bar and paste it in the configuration box to the left.</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-indigo-500/20 pt-4 text-xs text-slate-400 leading-relaxed">
+                            🔒 <b>Privacy Information:</b> Your document is completely fetched and aggregated client-side. No spreadsheet data is stored or transmitted to external servers.
+                        </div>
+
+                        <!-- Reset / Demo Button -->
+                        <div class="pt-2">
+                            <button onclick="loadSampleDataset()" class="w-full py-2 bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl text-xs text-indigo-300 font-bold transition-all">
+                                Load Local Mock Tracker
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- App Footer -->
+    <footer class="border-t border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900 py-6 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>&copy; 2026 Immersive Universal Analytics. Built client-side with full schema analysis.</p>
+        </div>
+    </footer>
+
+    <script>
+        const DEFAULT_SHEET_ID = "1exWSp3srx3mKOHsEmdXyl1mgUXmYiA8Rm0CvkQya81I";
+        const DEFAULT_GID = "1243295356";
+
+        // Main App State
+        const state = {
+            columns: [],        // Format: { id: "A", label: "Column Name", key: "Column_Name", type: "string"|"number"|"date" }
+            rows: [],           // Format: { Column_Name: value, ... }
+            filteredRows: [],   // Rows currently active after filters
+            activeFilters: {},  // Key-value of selected categorical filters
+            searchQuery: "",    // Search string
+            sortKey: "",        // Current sorting column
+            sortDirection: "asc", // "asc" | "desc"
+            currentPage: 1,     // Active table page
+            pageSize: 25,       // Rows per grid page
+            activeTab: "overview",
+            sourceMode: "gdrive", // "gdrive" | "csv" | "sample"
+            sheetId: DEFAULT_SHEET_ID,
+            gid: DEFAULT_GID,
+            chartInstances: {}  // Holds references to active Chart.js graphs
+        };
+
+        // Static Sample Data to guarantee flawless loading on initialization if URL fetch is delayed or blocked
+        const SAMPLE_DATASET = {
+            columns: [
+                { id: "A", label: "ID", key: "ID", type: "string" },
+                { id: "B", label: "Task", key: "Task", type: "string" },
+                { id: "C", label: "Department", key: "Department", type: "string" },
+                { id: "D", label: "Priority", key: "Priority", type: "string" },
+                { id: "E", label: "Status", key: "Status", type: "string" },
+                { id: "F", label: "Assigned Person", key: "Assigned_Person", type: "string" },
+                { id: "G", label: "Budget ($)", key: "Budget____", type: "number" },
+                { id: "H", label: "Actual Spend ($)", key: "Actual_Spend____", type: "number" },
+                { id: "I", label: "Estimated Hours", key: "Estimated_Hours", type: "number" },
+                { id: "J", label: "Actual Hours", key: "Actual_Hours", type: "number" },
+                { id: "K", label: "Start Date", key: "Start_Date", type: "date" },
+                { id: "L", label: "Due Date", key: "Due_Date", type: "date" },
+                { id: "M", label: "Completion (%)", key: "Completion____", type: "number" }
+            ],
+            rows: [
+                { ID: "TASK-01", Task: "Review Architecture Plan", Department: "Engineering", Priority: "High", Status: "Completed", Assigned_Person: "Jane Doe", Budget____: 1500, Actual_Spend____: 1400, Estimated_Hours: 20, Actual_Hours: 18, Start_Date: "2026-05-01", Due_Date: "2026-05-05", Completion____: 100 },
+                { ID: "TASK-02", Task: "Create Figma Mockups", Department: "Design", Priority: "High", Status: "Completed", Assigned_Person: "Marc Smith", Budget____: 3200, Actual_Spend____: 3400, Estimated_Hours: 45, Actual_Hours: 48, Start_Date: "2026-05-03", Due_Date: "2026-05-12", Completion____: 100 },
+                { ID: "TASK-03", Task: "Develop Core REST APIs", Department: "Engineering", Priority: "Critical", Status: "In Progress", Assigned_Person: "Alex Wong", Budget____: 5000, Actual_Spend____: 4000, Estimated_Hours: 80, Actual_Hours: 65, Start_Date: "2026-05-10", Due_Date: "2026-05-28", Completion____: 80 },
+                { ID: "TASK-04", Task: "Write Automated Integrations", Department: "Engineering", Priority: "Medium", Status: "In Progress", Assigned_Person: "Alex Wong", Budget____: 2000, Actual_Spend____: 1800, Estimated_Hours: 30, Actual_Hours: 25, Start_Date: "2026-05-15", Due_Date: "2026-06-05", Completion____: 60 },
+                { ID: "TASK-05", Task: "Draft Security Protocol Doc", Department: "Security", Priority: "Critical", Status: "Blocked", Assigned_Person: "Elena Rostova", Budget____: 2500, Actual_Spend____: 1200, Estimated_Hours: 25, Actual_Hours: 12, Start_Date: "2026-05-11", Due_Date: "2026-05-22", Completion____: 40 },
+                { ID: "TASK-06", Task: "Run Beta Penetration Tests", Department: "Security", Priority: "High", Status: "To Do", Assigned_Person: "Elena Rostova", Budget____: 4000, Actual_Spend____: 0, Estimated_Hours: 40, Actual_Hours: 0, Start_Date: "2026-06-01", Due_Date: "2026-06-12", Completion____: 0 },
+                { ID: "TASK-07", Task: "Draft Press Release Kit", Department: "Marketing", Priority: "Low", Status: "Completed", Assigned_Person: "Sarah Jenkins", Budget____: 1200, Actual_Spend____: 1200, Estimated_Hours: 15, Actual_Hours: 15, Start_Date: "2026-05-05", Due_Date: "2026-05-08", Completion____: 100 },
+                { ID: "TASK-08", Task: "Execute Ad Campaigns", Department: "Marketing", Priority: "Medium", Status: "In Progress", Assigned_Person: "Sarah Jenkins", Budget____: 8000, Actual_Spend____: 4500, Estimated_Hours: 50, Actual_Hours: 24, Start_Date: "2026-05-18", Due_Date: "2026-06-20", Completion____: 55 },
+                { ID: "TASK-09", Task: "Review Compliance Policy", Department: "Legal", Priority: "Low", Status: "To Do", Assigned_Person: "James Vance", Budget____: 1500, Actual_Spend____: 0, Estimated_Hours: 12, Actual_Hours: 0, Start_Date: "2026-06-10", Due_Date: "2026-06-25", Completion____: 0 },
+                { ID: "TASK-10", Task: "Final QA Validation Sandbox", Department: "Engineering", Priority: "High", Status: "To Do", Assigned_Person: "Jane Doe", Budget____: 3000, Actual_Spend____: 0, Estimated_Hours: 35, Actual_Hours: 0, Start_Date: "2026-06-05", Due_Date: "2026-06-15", Completion____: 0 }
+            ]
+        };
+
+        // Initialization Lifecycles
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+        });
+
+        function initApp() {
+            // Setup Light/Dark Mode switch toggle listeners
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            themeToggleBtn.addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                setTimeout(() => {
+                    // Force refresh charts with updated background palette settings
+                    recalculateAndDraw();
+                }, 50);
+            });
+
+            // Populate settings inputs initially
+            document.getElementById('config-sheet-url').value = `https://docs.google.com/spreadsheets/d/${state.sheetId}/edit?gid=${state.gid}`;
+            document.getElementById('config-gid').value = state.gid;
+
+            // Wire up explorer inputs
+            document.getElementById('grid-search').addEventListener('input', (e) => {
+                state.searchQuery = e.target.value.toLowerCase();
+                state.currentPage = 1;
+                filterAndRenderData();
+            });
+
+            document.getElementById('grid-page-size').addEventListener('change', (e) => {
+                state.pageSize = parseInt(e.target.value);
+                state.currentPage = 1;
+                renderExplorerGrid();
+            });
+
+            // Set up drag and drop handler for CSV uploading
+            setupFileHandlers();
+
+            // Fire initial load
+            fetchFromGoogleSheets();
+        }
+
+        // Apply visual switches
+        function switchTab(tabId) {
+            state.activeTab = tabId;
+            // Update active states on desktop buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-100', 'dark:bg-slate-800', 'text-brand-600', 'dark:text-brand-400');
+                btn.classList.add('text-slate-500', 'hover:text-slate-900', 'dark:text-slate-400', 'dark:hover:text-slate-200');
+            });
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-500', 'hover:text-slate-900', 'dark:text-slate-400', 'dark:hover:text-slate-200');
+                activeBtn.classList.add('bg-slate-100', 'dark:bg-slate-800', 'text-brand-600', 'dark:text-brand-400');
+            }
+
+            // Update mobile elements
+            const tabBtnMobile = document.querySelectorAll('.tab-btn-mobile');
+            const indexMap = { 'overview': 0, 'analytics': 1, 'data': 2, 'settings': 3 };
+            tabBtnMobile.forEach((btn, idx) => {
+                if (idx === indexMap[tabId]) {
+                    btn.classList.add('text-brand-600', 'dark:text-brand-400');
+                    btn.classList.remove('text-slate-500', 'dark:text-slate-400');
+                } else {
+                    btn.classList.remove('text-brand-600', 'dark:text-brand-400');
+                    btn.classList.add('text-slate-500', 'dark:text-slate-400');
+                }
+            });
+
+            // Show proper division
+            document.getElementById('view-overview').classList.add('hidden');
+            document.getElementById('view-analytics').classList.add('hidden');
+            document.getElementById('view-data').classList.add('hidden');
+            document.getElementById('view-settings').classList.add('hidden');
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            // Quick Canvas resize fix for visual redraw on tab toggle
+            setTimeout(() => {
+                if (tabId === 'overview') {
+                    recalculateAndDraw();
+                } else if (tabId === 'analytics') {
+                    updateBIStudioChart();
+                }
+            }, 50);
+        }
+
+        // Fetches data from Google Sheets visualization API
+        async function fetchFromGoogleSheets() {
+            setLoading(true);
+            const badge = document.getElementById('source-badge');
+            badge.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-indigo-500 rounded-full animate-ping"></span>Connecting...`;
+            badge.className = 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-100 dark:bg-indigo-950/50 text-indigo-800 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/50';
+
+            try {
+                // Construct standard visualization endpoint
+                const url = `https://docs.google.com/spreadsheets/d/${state.sheetId}/gviz/tq?tqx=out:json&gid=${state.gid}`;
+                
+                // Add a dynamic fetch timeout to prevent hanging connections
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) throw new Error("Spreadsheet inaccessible.");
+                
+                const text = await response.text();
+                const data = parseGvizResponse(text);
+                
+                state.columns = data.columns;
+                state.rows = data.rows;
+                state.sourceMode = "gdrive";
+                
+                // Hide fallback warnings and mark successful badge connection
+                document.getElementById('fallback-notification').classList.add('hidden');
+                badge.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-emerald-500 rounded-full"></span>Google Sheet Connected`;
+                badge.className = 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50';
+                
+                // Set initial properties & refresh views
+                resetFiltering();
+                setLoading(false);
+            } catch (err) {
+                console.warn("Failed fetching from Google Sheet URL. Applying fallback mock data.", err);
+                
+                // Build an informative diagnostic update inside the warning panel
+                const diagMsg = document.getElementById('diagnostic-access-test');
+                if (err.name === 'AbortError') {
+                    diagMsg.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0"></span><span><strong class="text-slate-700 dark:text-slate-300">Timeout Status:</strong> Fetch took longer than 8s. Check your internet connection or Google Service availability.</span>`;
+                } else {
+                    diagMsg.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 shrink-0"></span><span><strong class="text-slate-700 dark:text-slate-300">Access Status:</strong> Failed to load (${err.message || 'CORS / Blocked Access'}). This means the Spreadsheet is secure/restricted, or a privacy browser extension is blocking Google Visualization API scripts.</span>`;
+                }
+
+                // Show warn block
+                document.getElementById('fallback-notification').classList.remove('hidden');
+                
+                // Highlight config as demo
+                badge.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-amber-500 rounded-full animate-pulse"></span>Demo Sandbox`;
+                badge.className = 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50';
+
+                // Automatically fallback to sample dataset
+                loadSampleDatasetDirectly();
+            }
+        }
+
+        // Decodes the unique JSON wrap standard in the Google visualization query API
+        function parseGvizResponse(text) {
+            const startMarker = "google.visualization.Query.setResponse(";
+            const startIndex = text.indexOf(startMarker);
+            if (startIndex === -1) {
+                throw new Error("Incorrect payload framing.");
+            }
+            
+            const rawJson = text.substring(startIndex + startMarker.length, text.lastIndexOf(")"));
+            const parsedObj = JSON.parse(rawJson);
+            
+            if (parsedObj.status === "error") {
+                const message = parsedObj.errors ? parsedObj.errors[0].detailed_message : "Unknown visualizer fetch error.";
+                throw new Error(message);
+            }
+            
+            const table = parsedObj.table;
+            
+            // Format system columns headers
+            const cols = table.cols.map((col, idx) => {
+                const standardLabel = col.label ? col.label.trim() : `Column ${String.fromCharCode(65 + idx)}`;
+                const uniqueKey = standardLabel.replace(/[^a-zA-Z0-9]/g, '_');
+                return {
+                    id: col.id || String.fromCharCode(65 + idx),
+                    label: standardLabel,
+                    key: uniqueKey,
+                    type: col.type || 'string'
+                };
+            });
+            
+            // Format dynamic rows values
+            const rows = table.rows.map(row => {
+                const rowObj = {};
+                cols.forEach((col, idx) => {
+                    const cell = row.c[idx];
+                    let rawVal = cell ? cell.v : null;
+                    
+                    // Specific date extraction from visualization String e.g. "Date(2026,4,1)"
+                    if (col.type === 'date' && typeof rawVal === 'string' && rawVal.startsWith('Date(')) {
+                        const numericMatches = rawVal.match(/\d+/g);
+                        if (numericMatches && numericMatches.length >= 3) {
+                            const year = parseInt(numericMatches[0]);
+                            const monthIndex = parseInt(numericMatches[1]); // Months 0-indexed in JS
+                            const day = parseInt(numericMatches[2]);
+                            const dateObj = new Date(year, monthIndex, day);
+                            rawVal = dateObj.toISOString().split('T')[0];
+                        }
+                    }
+                    rowObj[col.key] = rawVal;
+                });
+                return rowObj;
+            });
+            
+            return { columns: cols, rows };
+        }
+
+        // Applies local visual loading status transitions
+        function setLoading(isLoading) {
+            if (isLoading) {
+                document.getElementById('system-loading').classList.remove('hidden');
+                document.getElementById('content-views').classList.add('hidden');
+            } else {
+                document.getElementById('system-loading').classList.add('hidden');
+                document.getElementById('content-views').classList.remove('hidden');
+            }
+        }
+
+        // Falls back instantly to sample dataset structure
+        function loadSampleDataset() {
+            loadSampleDatasetDirectly();
+            switchTab('overview');
+        }
+
+        function loadSampleDatasetDirectly() {
+            state.columns = JSON.parse(JSON.stringify(SAMPLE_DATASET.columns));
+            state.rows = JSON.parse(JSON.stringify(SAMPLE_DATASET.rows));
+            state.sourceMode = "sample";
+            resetFiltering();
+            setLoading(false);
+        }
+
+        // Parses customized URLs input in configurations panel
+        function applyGoogleSheetSource() {
+            const rawUrl = document.getElementById('config-sheet-url').value;
+            let customGid = document.getElementById('config-gid').value || "0";
+            
+            // Attempt to parse out Sheet ID and GID automatically from URL if present
+            const idMatches = rawUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            const gidMatches = rawUrl.match(/[#&?]gid=([0-9]+)/);
+
+            if (gidMatches && gidMatches[1] && !document.getElementById('config-gid').value) {
+                customGid = gidMatches[1];
+                document.getElementById('config-gid').value = customGid;
+            }
+
+            if (idMatches && idMatches[1]) {
+                state.sheetId = idMatches[1];
+                state.gid = customGid;
+                fetchFromGoogleSheets();
+            } else {
+                showModalError("Invalid URL syntax. Ensure the URL contains a valid spreadsheet key. Format: /d/YOUR_ID/edit");
+            }
+        }
+
+        // Decodes copy-pasted raw CSV string
+        function applyCSVTextSource() {
+            const rawText = document.getElementById('csv-text-paste').value.trim();
+            if (!rawText) {
+                showModalError("Cannot parse empty values.");
+                return;
+            }
+            processRawCSVString(rawText);
+            switchTab('overview');
+        }
+
+        // Unified parser for CSV input formats
+        function processRawCSVString(csvString) {
+            setLoading(true);
+            try {
+                const parsed = parseRawCSV(csvString);
+                if (!parsed || parsed.rows.length === 0) {
+                    throw new Error("No readable records parsed.");
+                }
+                
+                state.columns = parsed.columns;
+                state.rows = parsed.rows;
+                state.sourceMode = "csv";
+                
+                // Update Badge UI
+                const badge = document.getElementById('source-badge');
+                badge.innerHTML = `<span class="w-2 h-2 mr-1.5 bg-sky-500 rounded-full"></span>Offline CSV Connected`;
+                badge.className = 'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-100 dark:bg-sky-950/50 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50';
+                
+                document.getElementById('fallback-notification').classList.add('hidden');
+                resetFiltering();
+                setLoading(false);
+            } catch (e) {
+                setLoading(false);
+                showModalError("Failed parsing CSV payload. Check delimiter formats. " + e.message);
+            }
+        }
+
+        // Custom CSV syntax parser to read quotes and escapes locally
+        function parseRawCSV(textStr) {
+            const lines = textStr.split(/\r?\n/);
+            if (lines.length === 0 || !lines[0].trim()) return null;
+            
+            function parseLine(line) {
+                const entries = [];
+                let current = "";
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        entries.push(current.trim());
+                        current = "";
+                    } else {
+                        current += char;
+                    }
+                }
+                entries.push(current.trim());
+                return entries.map(val => val.replace(/^"|"$/g, '').trim());
+            }
+
+            const headerRow = parseLine(lines[0]);
+            const columns = headerRow.map((header, index) => {
+                const cleanHeader = header || `Column ${index + 1}`;
+                return {
+                    id: String.fromCharCode(65 + index),
+                    label: cleanHeader,
+                    key: cleanHeader.replace(/[^a-zA-Z0-9]/g, '_'),
+                    type: 'string' // Detect dynamic type later
+                };
+            });
+
+            const rows = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const cellValues = parseLine(lines[i]);
+                const rowObj = {};
+                columns.forEach((col, idx) => {
+                    const val = cellValues[idx] !== undefined ? cellValues[idx] : null;
+                    rowObj[col.key] = val;
+                });
+                rows.push(rowObj);
+            }
+
+            // Dynamic type detection heuristics
+            columns.forEach(col => {
+                let numericVerify = true;
+                let dateVerify = true;
+                let holdsData = false;
+                
+                rows.forEach(row => {
+                    const rawVal = row[col.key];
+                    if (rawVal !== null && rawVal !== "") {
+                        holdsData = true;
+                        // Confirm numeric status
+                        if (isNaN(rawVal) || isNaN(parseFloat(rawVal))) {
+                            numericVerify = false;
+                        }
+                        // Confirm date format validation
+                        const parseStamp = Date.parse(rawVal);
+                        if (isNaN(parseStamp)) {
+                            dateVerify = false;
+                        }
+                    }
+                });
+                
+                if (holdsData) {
+                    if (numericVerify) {
+                        col.type = 'number';
+                        // Cast text parameters to numbers
+                        rows.forEach(row => {
+                            if (row[col.key] !== null && row[col.key] !== "") {
+                                row[col.key] = parseFloat(row[col.key]);
+                            }
+                        });
+                    } else if (dateVerify) {
+                        col.type = 'date';
+                    }
+                }
+            });
+
+            return { columns, rows };
+        }
+
+        // Sets up File upload handler triggers
+        function setupFileHandlers() {
+            const dragZone = document.getElementById('drag-drop-zone');
+            const fileInput = document.getElementById('csv-file-input');
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+
+            dragZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dragZone.classList.add('border-brand-500', 'bg-slate-800/80');
+            });
+
+            dragZone.addEventListener('dragleave', () => {
+                dragZone.classList.remove('border-brand-500', 'bg-slate-800/80');
+            });
+
+            dragZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dragZone.classList.remove('border-brand-500', 'bg-slate-800/80');
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+        }
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                processRawCSVString(evt.target.result);
+                switchTab('overview');
+            };
+            reader.readAsText(file);
+        }
+
+        // Runs calculations on current active dataset to trigger table/chart visual updates
+        function resetFiltering() {
+            state.activeFilters = {};
+            state.searchQuery = "";
+            state.currentPage = 1;
+            
+            // Build dynamically inferred filters interface options
+            renderFilterControls();
+            
+            // Dynamically populate options in Custom BI builder select items
+            populateBIStudioControls();
+            
+            // Perform execution
+            filterAndRenderData();
+        }
+
+        // Refilters the global dataset based on user options and text searches
+        function filterAndRenderData() {
+            state.filteredRows = state.rows.filter(row => {
+                // Apply categorical multi-filters
+                for (const colKey in state.activeFilters) {
+                    const selectedVal = state.activeFilters[colKey];
+                    if (selectedVal && selectedVal !== "ALL") {
+                        if (String(row[colKey]) !== selectedVal) {
+                            return false;
+                        }
+                    }
+                }
+
+                // Apply text search across all visible fields
+                if (state.searchQuery) {
+                    const searchStr = state.searchQuery;
+                    const rowMatch = Object.values(row).some(val => 
+                        val !== null && String(val).toLowerCase().includes(searchStr)
+                    );
+                    if (!rowMatch) return false;
+                }
+
+                return true;
+            });
+
+            // Perform sorting if specified
+            if (state.sortKey) {
+                const key = state.sortKey;
+                const dir = state.sortDirection === 'asc' ? 1 : -1;
+                const colDef = state.columns.find(c => c.key === key);
+                
+                state.filteredRows.sort((a, b) => {
+                    let valA = a[key];
+                    let valB = b[key];
+                    
+                    if (valA === null || valA === undefined) return 1;
+                    if (valB === null || valB === undefined) return -1;
+                    
+                    if (colDef && colDef.type === 'number') {
+                        return (parseFloat(valA) - parseFloat(valB)) * dir;
+                    } else {
+                        return String(valA).localeCompare(String(valB)) * dir;
+                    }
+                });
+            }
+
+            // Repopulate UI Panels
+            recalculateAndDraw();
+        }
+
+        // Updates Dashboard cards and rebuilds active charts
+        function recalculateAndDraw() {
+            // Compute Top Stats cards
+            renderDashboardCards();
+            
+            // Render basic standard charts
+            renderOverviewCharts();
+            
+            // Render explorer table rows
+            renderExplorerGrid();
+
+            // Refresh custom user-built chart
+            updateBIStudioChart();
+        }
+
+        // Dynamically detects metadata structures and formats high-level cards
+        function renderDashboardCards() {
+            const deck = document.getElementById('kpi-deck');
+            deck.innerHTML = ''; // Clean elements
+
+            const countTotal = state.filteredRows.length;
+
+            // Stat 1: Volume/Capacity
+            const kpi1 = document.createElement('div');
+            kpi1.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5';
+            kpi1.innerHTML = `
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total Records</span>
+                    <h3 class="text-2xl font-black text-slate-900 dark:text-white mt-1">${countTotal}</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">Filtered from ${state.rows.length} base rows</p>
+                </div>
+                <div class="p-3 bg-brand-500/10 text-brand-500 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </div>
+            `;
+            deck.appendChild(kpi1);
+
+            // Dynamically detect column classifications to derive secondary stats cards
+            const numericColumns = state.columns.filter(c => c.type === 'number');
+            const statusCol = state.columns.find(c => c.key.toLowerCase().includes('status') || c.key.toLowerCase().includes('state'));
+            const progressCol = state.columns.find(c => c.key.toLowerCase().includes('progress') || c.key.toLowerCase().includes('completion') || c.key.toLowerCase().includes('%'));
+
+            // Stat 2: Operational Progress / Performance metric
+            let progressUIValue = "0%";
+            let progressSubtext = "Not tracked in data";
+            if (progressCol) {
+                let sumProg = 0, validProgCount = 0;
+                state.filteredRows.forEach(row => {
+                    const v = parseFloat(row[progressCol.key]);
+                    if (!isNaN(v)) {
+                        sumProg += v;
+                        validProgCount++;
+                    }
+                });
+                const finalAvg = validProgCount > 0 ? (sumProg / validProgCount) : 0;
+                // Formats either standard percentage representation or values
+                progressUIValue = finalAvg > 1 ? `${finalAvg.toFixed(1)}%` : `${(finalAvg * 100).toFixed(1)}%`;
+                progressSubtext = `Average tracking of "${progressCol.label}"`;
+            } else if (statusCol) {
+                let completedCount = 0;
+                state.filteredRows.forEach(row => {
+                    const st = String(row[statusCol.key]).toLowerCase();
+                    if (st.includes('done') || st.includes('complete') || st.includes('finished') || st === 'yes' || st === 'closed') {
+                        completedCount++;
+                    }
+                });
+                const percentage = countTotal > 0 ? ((completedCount / countTotal) * 100) : 0;
+                progressUIValue = `${percentage.toFixed(1)}%`;
+                progressSubtext = `${completedCount} completed items`;
+            }
+
+            const kpi2 = document.createElement('div');
+            kpi2.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5';
+            kpi2.innerHTML = `
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Completion Yield</span>
+                    <h3 class="text-2xl font-black text-slate-900 dark:text-white mt-1">${progressUIValue}</h3>
+                    <p class="text-[10px] text-emerald-500 font-medium mt-1 flex items-center gap-1">${progressSubtext}</p>
+                </div>
+                <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            `;
+            deck.appendChild(kpi2);
+
+            // Stat 3: Primary Financial / Large-scale numeric summation (e.g., Spend, Cost, Budget)
+            const expenseCol = numericColumns.find(c => {
+                const label = c.label.toLowerCase();
+                return label.includes('spend') || label.includes('cost') || label.includes('spent') || label.includes('actual') || label.includes('amount');
+            });
+            const secondaryExpenseCol = numericColumns.find(c => {
+                const label = c.label.toLowerCase();
+                return label.includes('budget') || label.includes('limit') || label.includes('estimate');
+            });
+
+            let financeTitle = "Estimated Burden";
+            let financeValueStr = "$0";
+            let financeSubtext = "No financial fields identified";
+
+            const primaryValueCol = expenseCol || secondaryExpenseCol || (numericColumns.length > 0 ? numericColumns[0] : null);
+            if (primaryValueCol) {
+                let totalSpent = 0;
+                state.filteredRows.forEach(row => {
+                    const v = parseFloat(row[primaryValueCol.key]);
+                    if (!isNaN(v)) totalSpent += v;
+                });
+                
+                financeTitle = primaryValueCol.label;
+                financeValueStr = totalSpent.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+                
+                if (expenseCol && secondaryExpenseCol) {
+                    let totalBudget = 0;
+                    state.filteredRows.forEach(row => {
+                        const v = parseFloat(row[secondaryExpenseCol.key]);
+                        if (!isNaN(v)) totalBudget += v;
+                    });
+                    const diff = totalBudget - totalSpent;
+                    const diffSign = diff >= 0 ? 'Under' : 'Over';
+                    const percentDiff = totalBudget > 0 ? ((totalSpent / totalBudget) * 100).toFixed(0) : 0;
+                    financeSubtext = `${percentDiff}% of budget spent (${diffSign} Budget)`;
+                } else {
+                    financeSubtext = `Aggregate sum value computed`;
+                }
+            }
+
+            const kpi3 = document.createElement('div');
+            kpi3.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5';
+            kpi3.innerHTML = `
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">${financeTitle}</span>
+                    <h3 class="text-2xl font-black text-slate-900 dark:text-white mt-1">${financeValueStr}</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">${financeSubtext}</p>
+                </div>
+                <div class="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            `;
+            deck.appendChild(kpi3);
+
+            // Stat 4: Time tracking or secondary numeric calculation (e.g., Hours, Quantities)
+            const hourCol = numericColumns.find(c => {
+                const label = c.label.toLowerCase();
+                return label.includes('hour') || label.includes('time') || label.includes('duration') || label.includes('qty') || label.includes('quantity');
+            });
+            
+            let productivityTitle = "Secondary Metric";
+            let productivityValue = "N/A";
+            let productivitySubtext = "No numeric details found";
+
+            const trackingValueCol = hourCol || (numericColumns.length > 1 ? numericColumns[1] : null);
+            if (trackingValueCol) {
+                let totalVal = 0;
+                state.filteredRows.forEach(row => {
+                    const v = parseFloat(row[trackingValueCol.key]);
+                    if (!isNaN(v)) totalVal += v;
+                });
+                productivityTitle = trackingValueCol.label;
+                productivityValue = totalVal.toLocaleString('en-US', { maximumFractionDigits: 1 });
+                productivitySubtext = `Dynamic aggregate value`;
+            } else if (state.columns.length > 0) {
+                // Default fallback: unique values count in first visible column
+                const defaultCol = state.columns[0];
+                const setUnique = new Set(state.filteredRows.map(r => r[defaultCol.key]));
+                productivityTitle = `Unique ${defaultCol.label}`;
+                productivityValue = setUnique.size;
+                productivitySubtext = `Distinct parameters logged`;
+            }
+
+            const kpi4 = document.createElement('div');
+            kpi4.className = 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm flex items-center justify-between transition-transform hover:-translate-y-0.5';
+            kpi4.innerHTML = `
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">${productivityTitle}</span>
+                    <h3 class="text-2xl font-black text-slate-900 dark:text-white mt-1">${productivityValue}</h3>
+                    <p class="text-[10px] text-slate-400 mt-1">${productivitySubtext}</p>
+                </div>
+                <div class="p-3 bg-indigo-500/10 text-indigo-500 rounded-xl">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+            `;
+            deck.appendChild(kpi4);
+        }
+
+        // Renders visual charts using global configurations and theme palettes
+        function renderOverviewCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+            const textPaletteColor = isDark ? '#94a3b8' : '#64748b';
+
+            // Find optimal categorizations to map automatically
+            const categoricalColumns = state.columns.filter(c => c.type === 'string');
+            
+            // Priority list for Status Chart
+            const statusCol = categoricalColumns.find(c => {
+                const key = c.key.toLowerCase();
+                return key.includes('status') || key.includes('state') || key.includes('stage') || key.includes('progress');
+            }) || (categoricalColumns.length > 0 ? categoricalColumns[0] : null);
+
+            // Priority list for Category Chart
+            const categoryCol = categoricalColumns.find(c => {
+                const key = c.key.toLowerCase();
+                return (key.includes('category') || key.includes('dept') || key.includes('department') || key.includes('team') || key.includes('priority')) && c !== statusCol;
+            }) || (categoricalColumns.length > 1 ? categoricalColumns[1] : null);
+
+            // Redraw Primary Doughnut Chart (Status Splitting)
+            if (statusCol && state.filteredRows.length > 0) {
+                document.getElementById('main-breakdown-title').innerText = `${statusCol.label} Breakdown`;
+                const counts = {};
+                state.filteredRows.forEach(row => {
+                    const key = String(row[statusCol.key] || 'Unassigned');
+                    counts[key] = (counts[key] || 0) + 1;
+                });
+
+                const labels = Object.keys(counts);
+                const values = Object.values(counts);
+
+                // Destroy old instance
+                if (state.chartInstances.primary) state.chartInstances.primary.destroy();
+
+                const ctx = document.getElementById('chart-primary').getContext('2d');
+                state.chartInstances.primary = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: [
+                                '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#3b82f6', '#14b8a6'
+                            ],
+                            borderWidth: isDark ? 2 : 1,
+                            borderColor: isDark ? '#1e293b' : '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textPaletteColor, font: { family: 'Inter', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Redraw Secondary Horizontal Bar Chart (Category Distribution)
+            if (categoryCol && state.filteredRows.length > 0) {
+                document.getElementById('secondary-breakdown-title').innerText = `${categoryCol.label} Volume Distribution`;
+                const counts = {};
+                state.filteredRows.forEach(row => {
+                    const key = String(row[categoryCol.key] || 'Unassigned');
+                    counts[key] = (counts[key] || 0) + 1;
+                });
+
+                const labels = Object.keys(counts);
+                const values = Object.values(counts);
+
+                if (state.chartInstances.secondary) state.chartInstances.secondary.destroy();
+
+                const ctx = document.getElementById('chart-secondary').getContext('2d');
+                state.chartInstances.secondary = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Records Count',
+                            data: values,
+                            backgroundColor: 'rgba(99, 102, 241, 0.85)',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: { color: textPaletteColor }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { color: textPaletteColor, stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Redraw Triple Series / Dynamic Financial Chart
+            const numericColumns = state.columns.filter(c => c.type === 'number');
+            const expenseCol = numericColumns.find(c => {
+                const l = c.label.toLowerCase();
+                return l.includes('spend') || l.includes('cost') || l.includes('spent') || l.includes('actual');
+            });
+            const secondaryExpenseCol = numericColumns.find(c => {
+                const l = c.label.toLowerCase();
+                return l.includes('budget') || l.includes('limit') || l.includes('estimate') || l.includes('target');
+            });
+
+            const finChartCard = document.getElementById('financial-chart-card');
+            if (expenseCol && secondaryExpenseCol && categoryCol && state.filteredRows.length > 0) {
+                finChartCard.classList.remove('hidden');
+
+                const groups = {};
+                state.filteredRows.forEach(row => {
+                    const key = String(row[categoryCol.key] || 'Unassigned');
+                    if (!groups[key]) groups[key] = { primary: 0, secondary: 0 };
+                    
+                    const pValue = parseFloat(row[expenseCol.key]);
+                    const sValue = parseFloat(row[secondaryExpenseCol.key]);
+                    
+                    if (!isNaN(pValue)) groups[key].primary += pValue;
+                    if (!isNaN(sValue)) groups[key].secondary += sValue;
+                });
+
+                const labels = Object.keys(groups);
+                const primarySeries = labels.map(l => groups[l].primary);
+                const secondarySeries = labels.map(l => groups[l].secondary);
+
+                if (state.chartInstances.financial) state.chartInstances.financial.destroy();
+
+                const ctx = document.getElementById('chart-financial').getContext('2d');
+                state.chartInstances.financial = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: secondaryExpenseCol.label,
+                                data: secondarySeries,
+                                backgroundColor: 'rgba(99, 102, 241, 0.5)',
+                                borderRadius: 6
+                            },
+                            {
+                                label: expenseCol.label,
+                                data: primarySeries,
+                                backgroundColor: '#f59e0b',
+                                borderRadius: 6
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: { color: textPaletteColor }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: { color: textPaletteColor }
+                            },
+                            y: {
+                                grid: { color: gridColor },
+                                ticks: { color: textPaletteColor }
+                            }
+                        }
+                    }
+                });
+            } else {
+                finChartCard.classList.add('hidden');
+            }
+        }
+
+        // Dynamic Filter dropdown construction based on active rows metadata
+        function renderFilterControls() {
+            const container = document.getElementById('quick-filters-container');
+            container.innerHTML = ''; // Clear
+
+            const filterCandidates = state.columns.filter(c => 
+                c.type === 'string' && 
+                (c.label.toLowerCase().includes('status') || 
+                 c.label.toLowerCase().includes('dept') || 
+                 c.label.toLowerCase().includes('department') || 
+                 c.label.toLowerCase().includes('priority') || 
+                 c.label.toLowerCase().includes('assigned') || 
+                 c.label.toLowerCase().includes('category'))
+            );
+
+            // Show a maximum of 3 filters to avoid overcrowding
+            filterCandidates.slice(0, 3).forEach(col => {
+                // Find all unique values in raw rows for the dropdown list
+                const values = Array.from(new Set(state.rows.map(r => r[col.key]).filter(v => v !== null && v !== "")));
+                
+                const filterWrapper = document.createElement('div');
+                filterWrapper.className = 'flex items-center gap-1.5 w-full md:w-auto shrink-0';
+                
+                const select = document.createElement('select');
+                select.className = 'w-full md:w-auto bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2.5 py-1 text-xs text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500';
+                select.setAttribute('data-col', col.key);
+                
+                // Add default
+                const defaultOption = document.createElement('option');
+                defaultOption.value = 'ALL';
+                defaultOption.innerText = `All ${col.label}s`;
+                select.appendChild(defaultOption);
+
+                values.forEach(val => {
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.innerText = val;
+                    if (state.activeFilters[col.key] === val) {
+                        opt.selected = true;
+                    }
+                    select.appendChild(opt);
+                });
+
+                select.addEventListener('change', (e) => {
+                    const selected = e.target.value;
+                    if (selected === 'ALL') {
+                        delete state.activeFilters[col.key];
+                    } else {
+                        state.activeFilters[col.key] = selected;
+                    }
+                    state.currentPage = 1;
+                    filterAndRenderData();
+                });
+
+                filterWrapper.appendChild(select);
+                container.appendChild(filterWrapper);
+            });
+        }
+
+        // Populates fields on Tab 2: BI Studio selector tags
+        function populateBIStudioControls() {
+            const groupSelect = document.getElementById('bi-groupby');
+            const measureSelect = document.getElementById('bi-measure');
+            
+            // Retain active values if any
+            const activeGroupVal = groupSelect.value;
+            const activeMeasureVal = measureSelect.value;
+
+            groupSelect.innerHTML = '';
+            measureSelect.innerHTML = '';
+
+            // Group-by options: All categoric fields
+            const stringCols = state.columns.filter(c => c.type === 'string' || c.type === 'date');
+            stringCols.forEach(col => {
+                const opt = document.createElement('option');
+                opt.value = col.key;
+                opt.innerText = col.label;
+                if (col.key === activeGroupVal) opt.selected = true;
+                groupSelect.appendChild(opt);
+            });
+
+            // Measure options: Count option, plus any numerical columns
+            const countOpt = document.createElement('option');
+            countOpt.value = 'RECORD_COUNT';
+            countOpt.innerText = 'Volume of Records';
+            if ('RECORD_COUNT' === activeMeasureVal) countOpt.selected = true;
+            measureSelect.appendChild(countOpt);
+
+            const numCols = state.columns.filter(c => c.type === 'number');
+            numCols.forEach(col => {
+                const opt = document.createElement('option');
+                opt.value = col.key;
+                opt.innerText = col.label;
+                if (col.key === activeMeasureVal) opt.selected = true;
+                measureSelect.appendChild(opt);
+            });
+
+            // Wire-up automatic update listeners
+            groupSelect.onchange = () => updateBIStudioChart();
+            measureSelect.onchange = () => updateBIStudioChart();
+            document.getElementById('bi-aggmethod').onchange = () => updateBIStudioChart();
+            document.getElementById('bi-charttype').onchange = () => updateBIStudioChart();
+        }
+
+        // Custom Self-Service query processing and drawing
+        function updateBIStudioChart() {
+            if (state.activeTab !== 'analytics' || state.filteredRows.length === 0) return;
+
+            const groupKey = document.getElementById('bi-groupby').value;
+            const measureKey = document.getElementById('bi-measure').value;
+            const aggMethod = document.getElementById('bi-aggmethod').value;
+            const chartType = document.getElementById('bi-charttype').value;
+
+            if (!groupKey || !measureKey) return;
+
+            // Step 1: Group and Aggregate rows
+            const groups = {};
+            state.filteredRows.forEach(row => {
+                const rawGroupValue = row[groupKey];
+                const groupLabel = rawGroupValue !== null && rawGroupValue !== "" ? String(rawGroupValue) : "Unassigned / Empty";
+                
+                if (!groups[groupLabel]) groups[groupLabel] = [];
+                
+                if (measureKey !== 'RECORD_COUNT') {
+                    const parsedNumVal = parseFloat(row[measureKey]);
+                    if (!isNaN(parsedNumVal)) {
+                        groups[groupLabel].push(parsedNumVal);
+                    }
+                } else {
+                    groups[groupLabel].push(1); // placeholder for count
+                }
+            });
+
+            const labels = Object.keys(groups);
+            const values = labels.map(lbl => {
+                const list = groups[lbl];
+                if (list.length === 0) return 0;
+                
+                if (measureKey === 'RECORD_COUNT') {
+                    return list.length; // Simply count occurrences
+                }
+
+                if (aggMethod === 'sum') {
+                    return list.reduce((a, b) => a + b, 0);
+                } else if (aggMethod === 'avg') {
+                    return list.reduce((a, b) => a + b, 0) / list.length;
+                } else {
+                    return list.length; // Fallback to count
+                }
+            });
+
+            // Step 2: Render ChartJS Canvas
+            const isDark = document.documentElement.classList.contains('dark');
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+            const textPaletteColor = isDark ? '#94a3b8' : '#64748b';
+
+            if (state.chartInstances.biStudio) state.chartInstances.biStudio.destroy();
+
+            const ctx = document.getElementById('chart-bi-canvas').getContext('2d');
+            
+            // Format dynamic config specifications
+            const datasetLabel = measureKey === 'RECORD_COUNT' ? 'Record Volume' : `${aggMethod.toUpperCase()} of ${state.columns.find(c => c.key === measureKey).label}`;
+            
+            const isRadial = ['doughnut', 'polarArea'].includes(chartType);
+
+            state.chartInstances.biStudio = new Chart(ctx, {
+                type: chartType === 'horizontalBar' ? 'bar' : chartType,
+                data: {
+                    labels,
+                    datasets: [{
+                        label: datasetLabel,
+                        data: values,
+                        backgroundColor: isRadial ? [
+                            '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#3b82f6', '#14b8a6'
+                        ] : 'rgba(99, 102, 241, 0.85)',
+                        borderColor: isRadial && isDark ? '#0f172a' : 'transparent',
+                        borderWidth: isRadial ? 2 : 0,
+                        borderRadius: isRadial ? 0 : 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: chartType === 'horizontalBar' ? 'y' : 'x',
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: isRadial,
+                            position: 'bottom',
+                            labels: { color: textPaletteColor }
+                        }
+                    },
+                    scales: isRadial ? {} : {
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: textPaletteColor }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: { color: textPaletteColor }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Renders visual items in raw explorer tables
+        function renderExplorerGrid() {
+            const tableHead = document.getElementById('table-head');
+            const tableBody = document.getElementById('table-body');
+            
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+
+            if (state.columns.length === 0) return;
+
+            // Draw header tags with active sorting UI bindings
+            const headerRow = document.createElement('tr');
+            state.columns.forEach(col => {
+                const th = document.createElement('th');
+                th.className = 'px-6 py-3 font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider text-xs cursor-pointer select-none hover:bg-slate-100 dark:hover:bg-slate-900/40 transition-colors relative';
+                
+                // Active Sort symbols
+                let suffix = '';
+                if (state.sortKey === col.key) {
+                    suffix = state.sortDirection === 'asc' ? ' ▲' : ' ▼';
+                    th.classList.add('text-brand-600', 'dark:text-brand-400');
+                }
+                
+                th.innerText = col.label + suffix;
+                th.addEventListener('click', () => {
+                    if (state.sortKey === col.key) {
+                        state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        state.sortKey = col.key;
+                        state.sortDirection = 'asc';
+                    }
+                    filterAndRenderData();
+                });
+                headerRow.appendChild(th);
+            });
+            tableHead.appendChild(headerRow);
+
+            // Row Pagination Math
+            const totalRecords = state.filteredRows.length;
+            const totalPages = Math.ceil(totalRecords / state.pageSize) || 1;
+            if (state.currentPage > totalPages) state.currentPage = totalPages;
+
+            const startIndex = (state.currentPage - 1) * state.pageSize;
+            const endIndex = Math.min(startIndex + state.pageSize, totalRecords);
+
+            const paginatedRows = state.filteredRows.slice(startIndex, endIndex);
+
+            // Populate Row Elements
+            if (paginatedRows.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td colspan="${state.columns.length}" class="px-6 py-12 text-center text-slate-500">No matching search results or data rows loaded.</td>`;
+                tableBody.appendChild(tr);
+            } else {
+                paginatedRows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors';
+                    
+                    state.columns.forEach(col => {
+                        const td = document.createElement('td');
+                        td.className = 'px-6 py-3.5 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 font-medium';
+                        
+                        const rawValue = row[col.key];
+                        
+                        // Smart status or indicator pills styling
+                        if (col.key.toLowerCase().includes('status') || col.key.toLowerCase().includes('state')) {
+                            const valStr = String(rawValue || '').toLowerCase();
+                            let badgeStyle = "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200";
+                            if (valStr.includes('done') || valStr.includes('complete') || valStr.includes('finished') || valStr === 'yes') {
+                                badgeStyle = "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300";
+                            } else if (valStr.includes('progress') || valStr.includes('active') || valStr.includes('started')) {
+                                badgeStyle = "bg-indigo-100 dark:bg-indigo-950/40 text-indigo-800 dark:text-indigo-300";
+                            } else if (valStr.includes('block') || valStr.includes('fail') || valStr.includes('critical') || valStr === 'no') {
+                                badgeStyle = "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300";
+                            } else if (valStr.includes('todo') || valStr.includes('plan') || valStr.includes('backlog')) {
+                                badgeStyle = "bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-300";
+                            }
+                            td.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeStyle}">${rawValue || 'N/A'}</span>`;
+                        }
+                        // Priority tags
+                        else if (col.key.toLowerCase().includes('priority')) {
+                            const valStr = String(rawValue || '').toLowerCase();
+                            let badgeStyle = "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200";
+                            if (valStr.includes('high') || valStr.includes('critical') || valStr.includes('major')) {
+                                badgeStyle = "bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300";
+                            } else if (valStr.includes('medium') || valStr.includes('normal')) {
+                                badgeStyle = "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300";
+                            } else if (valStr.includes('low') || valStr.includes('minor')) {
+                                badgeStyle = "bg-slate-100 dark:bg-slate-700/60 text-slate-500 dark:text-slate-300";
+                            }
+                            td.innerHTML = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeStyle}">${rawValue || 'N/A'}</span>`;
+                        }
+                        // Numerical outputs matching currency/estimates
+                        else if (col.type === 'number' && rawValue !== null) {
+                            if (col.label.toLowerCase().includes('budget') || col.label.toLowerCase().includes('spend') || col.label.toLowerCase().includes('cost') || col.label.toLowerCase().includes('price') || col.label.toLowerCase().includes('amount') || col.label.toLowerCase().includes('$')) {
+                                td.innerText = rawValue.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+                            } else {
+                                td.innerText = rawValue.toLocaleString('en-US', { maximumFractionDigits: 2 });
+                            }
+                        }
+                        // Simple strings/unformatted tags
+                        else {
+                            td.innerText = rawValue !== null ? String(rawValue) : '';
+                        }
+                        tr.appendChild(td);
+                    });
+                    tableBody.appendChild(tr);
+                });
+            }
+
+            // Update Pagination Text Info
+            document.getElementById('grid-info').innerText = totalRecords > 0 
+                ? `Showing entries ${startIndex + 1} to ${endIndex} of ${totalRecords}` 
+                : `Showing entries 0 to 0 of 0`;
+
+            // Draw Pagination Buttons
+            renderPaginationButtons(totalPages);
+        }
+
+        function renderPaginationButtons(totalPages) {
+            const container = document.getElementById('grid-pagination');
+            container.innerHTML = '';
+
+            const maxVisibleButtons = 4;
+            
+            // Prev Button
+            const prev = document.createElement('button');
+            prev.className = `px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${state.currentPage === 1 ? 'border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}`;
+            prev.innerText = 'Prev';
+            prev.disabled = (state.currentPage === 1);
+            prev.onclick = () => {
+                state.currentPage--;
+                renderExplorerGrid();
+            };
+            container.appendChild(prev);
+
+            // Dynamic page buttons
+            let startPage = Math.max(1, state.currentPage - Math.floor(maxVisibleButtons / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisibleButtons - 1);
+
+            if (endPage - startPage + 1 < maxVisibleButtons) {
+                startPage = Math.max(1, endPage - maxVisibleButtons + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-1 text-xs font-bold rounded-lg border transition-all ${state.currentPage === i ? 'bg-brand-600 border-brand-600 text-white shadow-md shadow-brand-500/15' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}`;
+                btn.innerText = i;
+                btn.onclick = () => {
+                    state.currentPage = i;
+                    renderExplorerGrid();
+                };
+                container.appendChild(btn);
+            }
+
+            // Next Button
+            const next = document.createElement('button');
+            next.className = `px-3 py-1 text-xs font-semibold rounded-lg border transition-all ${state.currentPage === totalPages ? 'border-slate-200 dark:border-slate-700 text-slate-300 dark:text-slate-600 cursor-not-allowed' : 'border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300'}`;
+            next.innerText = 'Next';
+            next.disabled = (state.currentPage === totalPages);
+            next.onclick = () => {
+                state.currentPage++;
+                renderExplorerGrid();
+            };
+            container.appendChild(next);
+        }
+
+        // Export active table to standard CSV document
+        function exportToCSV() {
+            if (state.filteredRows.length === 0) {
+                showModalError("Cannot export empty table dataset.");
+                return;
+            }
+
+            const headers = state.columns.map(c => `"${c.label.replace(/"/g, '""')}"`).join(",");
+            const rows = state.filteredRows.map(row => {
+                return state.columns.map(col => {
+                    const rawVal = row[col.key];
+                    const safeVal = rawVal !== null ? String(rawVal).replace(/"/g, '""') : '';
+                    return `"${safeVal}"`;
+                }).join(",");
+            });
+
+            const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const downloadAnchor = document.createElement("a");
+            
+            downloadAnchor.setAttribute("href", encodedUri);
+            downloadAnchor.setAttribute("download", "Tracker_Dashboard_Export.csv");
+            document.body.appendChild(downloadAnchor);
+            
+            downloadAnchor.click();
+            document.body.removeChild(downloadAnchor);
+        }
+
+        // Handles custom diagnostic warning modal triggers
+        function showModalError(message) {
+            // Avoid destructive native alerts. Build custom overlay on the fly
+            const overlay = document.createElement('div');
+            overlay.className = 'fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50';
+            overlay.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 max-w-md w-full rounded-2xl p-6 shadow-2xl relative">
+                    <div class="flex items-center gap-3 text-rose-500 mb-4">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <h4 class="font-bold text-lg font-sans">Diagnostics Message</h4>
+                    </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-6 font-sans">${message}</p>
+                    <div class="flex justify-end">
+                        <button id="close-error-modal-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 transition-colors">Acknowledge</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            document.getElementById('close-error-modal-btn').onclick = () => {
+                document.body.removeChild(overlay);
+            };
+        }
+    </script>
+</body>
+</html>
